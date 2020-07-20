@@ -14,6 +14,7 @@
         <module>gmall-mocker</module>
         <module>gmall-logger</module>
         <module>gmall-real-time</module>
+        <module>gmall-canal</module>
     </modules>
     <parent>
         <groupId>org.springframework.boot</groupId>

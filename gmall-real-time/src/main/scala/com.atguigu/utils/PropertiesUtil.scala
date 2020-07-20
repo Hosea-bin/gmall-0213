@@ -6,12 +6,9 @@ import java.util.Properties
 object PropertiesUtil {
 
   def load(propertieName: String): Properties = {
-
     //创建配置信息对象
     val prop = new Properties()
-
     prop.load(new InputStreamReader(Thread.currentThread().getContextClassLoader.getResourceAsStream(propertieName), "UTF-8"))
-
     //返回
     prop
   }

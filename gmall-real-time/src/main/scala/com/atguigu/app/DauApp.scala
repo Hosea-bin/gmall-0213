@@ -19,32 +19,16 @@ object DauApp {
   def main(args: Array[String]): Unit = {
     //1.创建SparkConf
     val sparkConf: SparkConf = new SparkConf().setAppName("DauApp").setMaster("local[*]")
-    //val dauApp: SparkConf = new SparkConf().setMaster("local[*]").setAppName("DauApp")
+
     //2.创建StreamingContext
     val ssc = new StreamingContext(sparkConf,Seconds(5))
-    val context = new StreamingContext(sparkConf,Seconds(4))
+
     //3.消费Kafka数据，创建流
     val kafkaDStream: InputDStream[ConsumerRecord[String, String]] = MyKafkaUtil.getKafkaDStream(Set(GmallConstants.GMALL_START),ssc)
-    //MyKafkaUtil.getKafkaDStream(Set(GmallConstants.GMALL_START),ssc:StreamingContext)
+
     //4.转换为StartUpLog对象（添加日期和小时）
     val sdf = new SimpleDateFormat("yyyy-MM-dd HH")
-    //new SimpleDateFormat("yyyy-MM-dd HH")
-    kafkaDStream.map{ record=>
-      //a.将Value转换为StartUpLog对象
-      val value: String = record.value()
-      val startUpLog: StartUpLog = JSON.parseObject(value,classOf[StartUpLog])
-      //b.获取时间戳
-      val ts: Long = startUpLog.ts
-      //c.格式化时间
-      val dateHour: String = sdf.format(new Date(ts))
-      //d.将日期和小时分开
-      val dateHourArr: Array[String] = dateHour.split(" ")
-      //e.赋值日期和小时
-      startUpLog.logDate=dateHourArr(0)
-      startUpLog.logHour=dateHourArr(1)
-      //f.返回数据
-      startUpLog
-    }
+
     val startUpLogDStream: DStream[StartUpLog] = kafkaDStream.map { record =>
       //a.将Value转换为StartUpLog对象
       val value: String = record.value()
@@ -66,13 +50,13 @@ object DauApp {
 
     //5.去重1 -->根据Redis做跨批次去重
    val filteredByRedisLogDStream: DStream[StartUpLog] = DauHandler.filterByRedis(startUpLogDStream,ssc )
-//    filteredByRedisLogDStream.cache()
-//    filteredByRedisLogDStream.count().print()
+    filteredByRedisLogDStream.cache()
+    filteredByRedisLogDStream.count().print()
 
     //6.去重2-->根据mid做同批次去重
    val filteredByGroupDStream: DStream[StartUpLog] = DauHandler.filterByGroup(filteredByRedisLogDStream)
-//   filteredByGroupStream.cache()
-//    filteredByGroupStream.count().print()
+   filteredByGroupDStream.cache()
+    filteredByGroupDStream.count().print()
 
     //7.将两次数据去重后的Mid及日期写入Redis,提供给当天的批次做去重
     DauHandler.saveDateAndMidToRedis(filteredByGroupDStream)
