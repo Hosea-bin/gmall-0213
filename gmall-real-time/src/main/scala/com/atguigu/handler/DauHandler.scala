@@ -114,6 +114,7 @@ object DauHandler {
         val jedisClient: Jedis = RedisUtil.getJedisClient
         //b.对分区迭代，逐条写入
         iter.foreach(startUpLog => {
+          //RedisKey -> DAU:2020-07-17        Set[String] 类型的 mids
           jedisClient.sadd(s"DAU:${startUpLog.logDate}", startUpLog.mid)
         })
         //c.归还连接
